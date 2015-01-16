@@ -3,6 +3,7 @@ require 'set'
 gem 'rspec', '~> 3.1'
 require 'rspec'
 require 'stripe'
+require 'support/stripe_extensions'
 require 'stripe_mock'
 require 'stripe_mock/server'
 

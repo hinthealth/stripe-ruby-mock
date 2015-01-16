@@ -1,9 +1,10 @@
 module StripeMock
   module Data
 
-    def self.mock_customer(cards, params)
+    def self.mock_customer(cards, bank_accounts, params)
       cus_id = params[:id] || "test_cus_default"
       cards.each {|card| card[:customer] = cus_id}
+      bank_accounts.each {|bank_account| bank_account[:customer] = cus_id}
       {
         email: 'stripe_mock@example.com',
         description: 'an auto-generated stripe customer data mock',
@@ -14,6 +15,12 @@ module StripeMock
         delinquent: false,
         discount: nil,
         account_balance: 0,
+        bank_accounts: {
+          object: "list",
+          count: bank_accounts.count,
+          url: "/v1/customers/#{cus_id}/bank_accounts",
+          data: bank_accounts
+        },
         cards: {
           object: "list",
           count: cards.count,
@@ -26,7 +33,9 @@ module StripeMock
           url: "/v1/customers/#{cus_id}/subscriptions",
           data: []
         },
-        default_card: nil
+        default_card: nil,
+        default_bank_account: nil,
+        default_source: nil
       }.merge(params)
     end
 
@@ -132,7 +141,8 @@ module StripeMock
     end
 
     def self.mock_bank_account(params={})
-      {
+      StripeMock::Util.bank_merge({
+        id: "test_bank_account_default",
         object: "bank_account",
         bank_name: "STRIPEMOCK TEST BANK",
         last4: "6789",
@@ -140,7 +150,7 @@ module StripeMock
         currency: "usd",
         validated: false,
         fingerprint: "aBcFinGerPrINt123"
-      }.merge(params)
+      }, params)
     end
 
     def self.mock_coupon(params={})
