@@ -6,6 +6,10 @@ shared_examples 'Customer API' do
     stripe_helper.generate_card_token
   end
 
+  def gen_bank_tk
+    stripe_helper.generate_bank_token
+  end
+
   it "creates a stripe customer with a default card" do
     customer = Stripe::Customer.create({
       email: 'johnny@appleseed.com',
@@ -20,6 +24,48 @@ shared_examples 'Customer API' do
     expect(customer.cards.data.length).to eq(1)
     expect(customer.default_card).to_not be_nil
     expect(customer.default_card).to eq customer.cards.data.first.id
+
+    expect { customer.card }.to raise_error
+  end
+
+  it "creates a stripe customer with a default bank account" do
+    customer = Stripe::Customer.create({
+      email: 'johnny@appleseed.com',
+      bank_account: gen_bank_tk,
+      description: "a description"
+    })
+    expect(customer.id).to match(/^test_cus/)
+    expect(customer.email).to eq('johnny@appleseed.com')
+    expect(customer.description).to eq('a description')
+
+    expect(customer.bank_accounts.count).to eq(1)
+    expect(customer.bank_accounts.data.length).to eq(1)
+    expect(customer.default_bank_account).to_not be_nil
+    expect(customer.default_bank_account).to eq customer.bank_accounts.data.first.id
+
+    expect { customer.bank_account }.to raise_error
+  end
+
+  it "creates a stripe customer with a default card and bank account" do
+    customer = Stripe::Customer.create({
+      email: 'johnny@appleseed.com',
+      card: gen_card_tk,
+      bank_account: gen_bank_tk,
+      description: "a description"
+    })
+    expect(customer.id).to match(/^test_cus/)
+    expect(customer.email).to eq('johnny@appleseed.com')
+    expect(customer.description).to eq('a description')
+
+    expect(customer.cards.count).to eq(1)
+    expect(customer.cards.data.length).to eq(1)
+    expect(customer.default_card).to_not be_nil
+    expect(customer.default_card).to eq customer.cards.data.first.id
+
+    expect(customer.bank_accounts.count).to eq(1)
+    expect(customer.bank_accounts.data.length).to eq(1)
+    expect(customer.default_bank_account).to_not be_nil
+    expect(customer.default_bank_account).to eq customer.bank_accounts.data.first.id
 
     expect { customer.card }.to raise_error
   end

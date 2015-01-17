@@ -149,6 +149,7 @@ module StripeMock
         country: "US",
         currency: "usd",
         validated: false,
+        verified: false,
         fingerprint: "aBcFinGerPrINt123"
       }, params)
     end

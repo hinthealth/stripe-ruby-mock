@@ -56,6 +56,12 @@ module StripeMock
           cus[:default_card] = new_card[:id]
         end
 
+        if params[:bank_account]
+          bank_account = get_bank_by_token(params.delete(:bank_account))
+          add_bank_account_to_object(:customer, bank_account, cus, true)
+          cus[:default_card] = bank_account[:id]
+        end
+
         cus
       end
 
