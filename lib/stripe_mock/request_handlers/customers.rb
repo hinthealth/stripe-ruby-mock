@@ -15,16 +15,27 @@ module StripeMock
         sources = []
 
         if params[:source]
-          new_card =
+          new_source =
             if params[:source].is_a?(Hash)
-              unless params[:source][:object] && params[:source][:number] && params[:source][:exp_month] && params[:source][:exp_year]
-                raise Stripe::InvalidRequestError.new('You must supply a valid card', nil, 400)
+              if params[:source][:object] == 'card'
+                unless params[:source][:number] && params[:source][:exp_month] && params[:source][:exp_year]
+                  raise Stripe::InvalidRequestError.new('You must supply a valid card', nil, 400)
+                end
+                card_from_params(params[:source])
+              elsif params[:source][:object] == 'bank_account'
+                unless params[:source][:account_number] && params[:source][:routing_number]
+                  raise Stripe::InvalidRequestError.new('You must supply a valid bank account', nil, 400)
+                end
+              else
+                raise Stripe::InvalidRequestError.new('You must supply a valid source', nil, 400)
               end
-              card_from_params(params[:source])
             else
-              get_card_by_token(params.delete(:source))
+              get_source_by_token(params.delete(:source))
             end
-          sources << new_card
+          sources << new_source
+          if new_source[:object] == 'bank_account'
+            params[:default_bank_account] = sources.first[:id]
+          end
           params[:default_source] = sources.first[:id]
         end
 
@@ -61,9 +72,9 @@ module StripeMock
         cus.merge!(params)
 
         if params[:source]
-          new_card = get_card_by_token(params.delete(:source))
-          add_card_to_object(:customer, new_card, cus, true)
-          cus[:default_source] = new_card[:id]
+          new_source = get_source_by_token(params.delete(:source))
+          add_card_to_object(:customer, new_source, cus, true)
+          cus[:default_source] = new_source[:id]
         end
 
         if params[:coupon]
@@ -71,12 +82,6 @@ module StripeMock
           assert_existence :coupon, params[:coupon], coupon
 
           add_coupon_to_customer(cus, coupon)
-        end
-
-        if params[:bank_account]
-          bank_account = get_bank_by_token(params.delete(:bank_account))
-          add_bank_account_to_object(:customer, bank_account, cus, true)
-          cus[:default_card] = bank_account[:id]
         end
 
         cus

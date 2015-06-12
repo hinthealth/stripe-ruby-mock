@@ -4,7 +4,7 @@ module StripeMock
 
       def get_bank_account(object, bank_account_id, class_name='Customer')
         bank_accounts = object[:bank_accounts] || object[:sources]
-        bank_account = bank_accounts.find{|bank| bank[:id] == bank_account_id }
+        bank_account = bank_accounts[:data].find{|bank| bank[:id] == bank_account_id }
         if bank_account.nil?
           msg = "#{class_name} #{object[:id]} does not have bank_account #{bank_account_id}"
           raise Stripe::InvalidRequestError.new(msg, 'bank_account', 404)
@@ -77,9 +77,9 @@ module StripeMock
 
       def bank_account_from_params(attrs_or_token)
         if attrs_or_token.is_a? Hash
-          attrs_or_token = generate_bank_account_token(attrs_or_token)
+          attrs_or_token = generate_bank_token(attrs_or_token)
         end
-        bank_account = get_bank_account_by_token(attrs_or_token)
+        bank_account = get_bank_by_token(attrs_or_token)
         validate_bank_account(bank_account)
       end
 

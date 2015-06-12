@@ -11,39 +11,41 @@ module StripeMock
         if params[:customer].nil? && params[:card].nil? && params[:bank_account].nil?
           raise Stripe::InvalidRequestError.new('You must supply either a card, customer, or bank account to create a token.', nil, 400)
         end
-
         cus_id = params[:customer]
 
-        if cus_id && params[:source]
+        if cus_id && params[:card]
           customer = assert_existence :customer, cus_id, customers[cus_id]
-
-          # params[:card] is an id; grab it from the db
-          customer_card = get_card(customer, params[:source])
-          assert_existence :card, params[:source], customer_card
+          card = get_card(customer, params[:card])
+          assert_existence :card, params[:card], card
+        elsif cus_id && params[:bank_account]
+          customer = assert_existence :customer, cus_id, customers[cus_id]
+          bank_account = get_bank_account(customer, params[:bank_account])
+          assert_existence :bank_account, params[:bank_account], bank_account
         elsif params[:card]
           # params[:card] is a hash of cc info; "Sanitize" the card number
           params[:card][:fingerprint] = StripeMock::Util.fingerprint(params[:card][:number])
           params[:card][:last4] = params[:card][:number][-4,4]
-          customer_card = params[:card]
-        else
-          customer = assert_existence :customer, cus_id, customers[cus_id]
-          customer_card = get_card(customer, customer[:default_source])
-        end
-
-        if params[:bank_account]
-          # params[:card] is a hash of cc info; "Sanitize" the card number
+          card = params[:card]
+        elsif params[:bank_account]
+          # params[:bank_account] is a hash of bank account info; "Sanitize" the bank
           params[:bank_account][:fingerprint] = StripeMock::Util.fingerprint(params[:bank_account][:account_number])
           params[:bank_account][:last4] = params[:bank_account][:account_number][-4,4]
-          customer_bank_account = params[:bank_account]
-
-          token_id = generate_bank_token(customer_bank_account)
-          bank_account = @bank_tokens[token_id]
+          bank_account = params[:bank_account]
         else
-          token_id = generate_card_token(customer_bank_account || customer_card)
-          card = @card_tokens[token_id]
+          customer = assert_existence :customer, cus_id, customers[cus_id]
+          source = get_source(customer, customer[:default_source])
+          card = source if source[:object] == 'card'
+          bank_account = source if source[:object] == 'bank_account'
         end
 
-
+        if bank_account
+          token_id = generate_bank_token(bank_account)
+          bank_account = @bank_tokens[token_id]
+        end
+        if card
+          token_id = generate_card_token(card)
+          card = @card_tokens[token_id]
+        end
         Data.mock_token(params.merge :id => token_id, :card => card, bank_account: bank_account)
       end
 

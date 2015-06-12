@@ -42,7 +42,8 @@ shared_examples 'Card API' do
 
   it 'creates/returns a card when using customer.sources.create given card params' do
     customer = Stripe::Customer.create(id: 'test_customer_sub')
-    card = customer.sources.create(card: {
+    card = customer.sources.create(source: {
+      object: 'card',
       number: '4242424242424242',
       exp_month: '11',
       exp_year: '3031',

@@ -7,16 +7,6 @@ module Stripe
       refresh_from(response, opts)
     end
 
-    def validated?
-      # Status may be new, validated, verified, or errored
-      status.in?(%w(validated verified errored))
-    end
-
-    def verified?
-      status.in?(%w(verified errored))
-    end
-
-
     private
     def bank_account_url
       if respond_to?(:customer)

@@ -14,7 +14,7 @@ module StripeMock
 
       def create_bank_account(route, method_url, params, headers)
         route =~ method_url
-        customer = assert_existance :customer, $1, customers[$1]
+        customer = assert_existence :customer, $1, customers[$1]
 
         bank_account = bank_account_from_params(params[:bank_account])
         add_bank_account_to_object(:customer, bank_account, customer)
@@ -22,7 +22,7 @@ module StripeMock
 
       def retrieve_bank_accounts(route, method_url, params, headers)
         route =~ method_url
-        customer = assert_existance :customer, $1, customers[$1]
+        customer = assert_existence :customer, $1, customers[$1]
 
         bank_accounts = customer[:bank_accounts]
         bank_accounts[:count] = bank_accounts[:data].length
@@ -31,23 +31,23 @@ module StripeMock
 
       def retrieve_bank_account(route, method_url, params, headers)
         route =~ method_url
-        customer = assert_existance :customer, $1, customers[$1]
+        customer = assert_existence :customer, $1, customers[$1]
 
-        assert_existance :bank_account, $2, get_bank_account(customer, $2)
+        assert_existence :bank_account, $2, get_bank_account(customer, $2)
       end
 
       def retrieve_recipient_bank_account(route, method_url, params, headers)
         route =~ method_url
-        recipient = assert_existance :recipient, $1, recipients[$1]
+        recipient = assert_existence :recipient, $1, recipients[$1]
 
-        assert_existance :bank_account, $2, get_bank_account(recipient, $2, "Recipient")
+        assert_existence :bank_account, $2, get_bank_account(recipient, $2, "Recipient")
       end
 
       def delete_bank_account(route, method_url, params, headers)
         route =~ method_url
-        customer = assert_existance :customer, $1, customers[$1]
+        customer = assert_existence :customer, $1, customers[$1]
 
-        assert_existance :bank_account, $2, get_bank_account(customer, $2)
+        assert_existence :bank_account, $2, get_bank_account(customer, $2)
 
         bank_account = { id: $2, deleted: true }
         customer[:bank_accounts][:data].reject!{|cc|
@@ -59,9 +59,9 @@ module StripeMock
 
       def update_bank_account(route, method_url, params, headers)
         route =~ method_url
-        customer = assert_existance :customer, $1, customers[$1]
+        customer = assert_existence :customer, $1, customers[$1]
 
-        bank_account = assert_existance :bank_account, $2, get_bank_account(customer, $2)
+        bank_account = assert_existence :bank_account, $2, get_bank_account(customer, $2)
         bank_account.merge!(params)
         bank_account
       end
@@ -70,10 +70,10 @@ module StripeMock
         route =~ method_url
 
         customer = customers[$1]
-        assert_existance :customer, $1, customer
+        assert_existence :customer, $1, customer
 
         bank = get_customer_bank(customer, $2)
-        assert_existance :bank, $2, bank
+        assert_existence :bank, $2, bank
 
         # These are only acceptable deposit amounts for test banks
         if params[:amounts] == [32,45]

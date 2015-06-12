@@ -2,10 +2,10 @@ require 'spec_helper'
 
 shared_examples 'Bank Account API' do
 
-  it 'creates/returns a bank_account when using customer.bank_accounts.create given a bank_account token' do
+  it 'creates/returns a bank_account when using customer.sources.create given a bank_account token' do
     customer = Stripe::Customer.create(id: 'test_customer_sub')
     bank_account_token = stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US")
-    bank_account = customer.bank_accounts.create(bank_account: bank_account_token)
+    bank_account = customer.sources.create(source: bank_account_token)
 
     expect(bank_account.customer).to eq('test_customer_sub')
     expect(bank_account.last4).to eq("1123")
@@ -21,9 +21,10 @@ shared_examples 'Bank Account API' do
     expect(bank_account.country).to eq("US")
   end
 
-  it 'creates/returns a bank_account when using customer.bank_accounts.create given bank_account params' do
+  it 'creates/returns a bank_account when using customer.sources.create given bank_account params' do
     customer = Stripe::Customer.create(id: 'test_customer_sub')
-    bank_account = customer.bank_accounts.create(bank_account: {
+    bank_account = customer.sources.create(source: {
+      object: 'bank_account',
       account_number: '00987654321',
       routing_number: '22211122211',
       bank_name: "BANK OF AMERICA",
@@ -50,7 +51,7 @@ shared_examples 'Bank Account API' do
     customer = Stripe::Customer.create
     expect(customer.bank_accounts.count).to eq 0
 
-    customer.bank_accounts.create :bank_account => stripe_helper.generate_bank_token
+    customer.bank_accounts.create :source => stripe_helper.generate_bank_token
     # Yes, stripe-ruby does not actually add the new bank_account to the customer instance
     expect(customer.bank_accounts.count).to eq 0
 
@@ -59,19 +60,33 @@ shared_examples 'Bank Account API' do
     expect(customer2.default_bank_account).to eq customer2.bank_accounts.first.id
   end
 
+
+  it "creates a single bank_account with a generated bank_account token", :live => true do
+    customer = Stripe::Customer.create
+    expect(customer.sources.count).to eq 0
+
+    customer.sources.create :source => stripe_helper.generate_bank_token
+    # Yes, stripe-ruby does not actually add the new bank_account to the customer instance
+    expect(customer.sources.count).to eq 0
+
+    customer2 = Stripe::Customer.retrieve(customer.id)
+    expect(customer2.sources.count).to eq 1
+    expect(customer2.default_bank_account).to eq customer2.sources.first.id
+  end
+
   it 'create does not change the customers default bank_account if already set' do
-    customer = Stripe::Customer.create(id: 'test_customer_sub', default_bank_account: "test_cc_original")
+    customer = Stripe::Customer.create(id: 'test_customer_sub', default_source: "test_cc_original")
     bank_account_token = stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US")
-    bank_account = customer.bank_accounts.create(bank_account: bank_account_token)
+    bank_account = customer.sources.create(source: bank_account_token)
 
     customer = Stripe::Customer.retrieve('test_customer_sub')
-    expect(customer.default_bank_account).to eq("test_cc_original")
+    expect(customer.default_source).to eq("test_cc_original")
   end
 
   it 'create updates the customers default bank_account if not set' do
     customer = Stripe::Customer.create(id: 'test_customer_sub')
     bank_account_token = stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US")
-    bank_account = customer.bank_accounts.create(bank_account: bank_account_token)
+    bank_account = customer.sources.create(source: bank_account_token)
 
     customer = Stripe::Customer.retrieve('test_customer_sub')
     expect(customer.default_bank_account).to_not be_nil
@@ -80,7 +95,7 @@ shared_examples 'Bank Account API' do
   context "retrieval and deletion" do
     let!(:customer) { Stripe::Customer.create(id: 'test_customer_sub') }
     let!(:bank_account_token) { stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US") }
-    let!(:bank_account) { customer.bank_accounts.create(bank_account: bank_account_token) }
+    let!(:bank_account) { customer.sources.create(source: bank_account_token) }
 
     it "retrieves a customers bank_account" do
       retrieved = customer.bank_accounts.retrieve(bank_account.id)
@@ -115,7 +130,7 @@ shared_examples 'Bank Account API' do
 
     context "deletion when the user has two bank_accounts" do
       let!(:bank_account_token_2) { stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US") }
-      let!(:bank_account_2) { customer.bank_accounts.create(bank_account: bank_account_token_2) }
+      let!(:bank_account_2) { customer.sources.create(source: bank_account_token_2) }
 
       it "has just one bank_account anymore" do
         pending "Bank accounts can't be deleted yet"

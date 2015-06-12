@@ -42,6 +42,7 @@ module StripeMock
 
       def add_source_to(type, type_id, params, objects)
         resource = assert_existence type, type_id, objects[type_id]
+        source = params[:source]
         if source.is_a?(Hash)
           case source[:object]
           when 'bank_account'
@@ -52,20 +53,17 @@ module StripeMock
             raise "Sources must have an object, and it must be either 'card' or 'bank_account'"
           end
         elsif source.is_a?(String)
-          if source.starts_with?('btok')
+          if source =~ /btok/
             add_bank_account_to(type, type_id, params, objects)
           else
             add_card_to(type, type_id, params, objects)
           end
+        else
+          # require 'byebug'
+          # byebug
+          raise "wtf are you adding?? #{source}  #{params}"
         end
       end
-
-
-      # get_source(obj, id)
-      # delete_source_from
-      # add_source_to(:customer, $1, params, customers)
-      # retrieve_object_sources(:customer, $1, customers)
-      # retrieve_object_sources(type, object, )
     end
   end
 end

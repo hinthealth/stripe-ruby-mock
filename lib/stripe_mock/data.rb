@@ -4,6 +4,7 @@ module StripeMock
     def self.mock_customer(sources, params)
       cus_id = params[:id] || "test_cus_default"
       sources.each {|source| source[:customer] = cus_id}
+      bank_accounts = sources.select{|source| source[:object] == 'bank_account' }
       {
         email: 'stripe_mock@example.com',
         description: 'an auto-generated stripe customer data mock',
@@ -20,13 +21,20 @@ module StripeMock
           url: "/v1/customers/#{cus_id}/sources",
           data: sources
         },
+        bank_accounts: {
+          object: "list",
+          total_count: bank_accounts.size,
+          url: "/v1/customers/#{cus_id}/bank_accounts",
+          data: bank_accounts
+        },
         subscriptions: {
           object: "list",
           total_count: 0,
           url: "/v1/customers/#{cus_id}/subscriptions",
           data: []
         },
-        default_source: nil
+        default_source: nil,
+        default_bank_account: nil,
       }.merge(params)
     end
 
@@ -142,8 +150,7 @@ module StripeMock
         last4: "6789",
         country: "US",
         currency: "usd",
-        validated: false,
-        verified: false,
+        status: 'new',
         fingerprint: "aBcFinGerPrINt123"
       }, params)
     end

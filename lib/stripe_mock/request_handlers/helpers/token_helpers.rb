@@ -18,10 +18,10 @@ module StripeMock
       end
 
       def get_source_by_token(token)
-        if token.nil? || token.starts_with?(CARD_TOKEN_PREFIX)
-          get_card_by_token(token)
-        else
+        if token.to_s =~ /#{BANK_TOKEN_PREFIX}/
           get_bank_by_token(token)
+        else
+          get_card_by_token(token)
         end
       end
 
