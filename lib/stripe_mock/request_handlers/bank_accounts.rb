@@ -6,6 +6,7 @@ module StripeMock
         klass.add_handler 'get /v1/customers/(.*)/bank_accounts', :retrieve_bank_accounts
         klass.add_handler 'post /v1/customers/(.*)/bank_accounts', :create_bank_account
         klass.add_handler 'get /v1/customers/(.*)/bank_accounts/(.*)', :retrieve_bank_account
+        klass.add_handler 'post /v1/customers/(.*)/bank_accounts/(.*)/verify', :verify_bank_accounts
         klass.add_handler 'delete /v1/customers/(.*)/bank_accounts/(.*)', :delete_bank_account
         klass.add_handler 'post /v1/customers/(.*)/bank_accounts/(.*)', :update_bank_account
         klass.add_handler 'get /v1/recipients/(.*)/bank_accounts/(.*)', :retrieve_recipient_bank_account
@@ -64,6 +65,25 @@ module StripeMock
         bank_account.merge!(params)
         bank_account
       end
+
+      def verify_bank_accounts(route, method_url, params, headers)
+        route =~ method_url
+
+        customer = customers[$1]
+        assert_existance :customer, $1, customer
+
+        bank = get_customer_bank(customer, $2)
+        assert_existance :bank, $2, bank
+
+        # These are only acceptable deposit amounts for test banks
+        if params[:amounts] == [32,45]
+          bank[:verified] = true
+        else
+          raise Stripe::InvalidRequestError.new("The verification amounts provided do not match.", "BankAccount", 400)
+        end
+        bank
+      end
+
 
       private
 

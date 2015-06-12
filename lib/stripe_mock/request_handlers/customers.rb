@@ -12,26 +12,29 @@ module StripeMock
 
       def new_customer(route, method_url, params, headers)
         params[:id] ||= new_id('cus')
-        cards = []
-        bank_accounts = []
+        sources = []
 
-        if params[:card]
-          cards << get_card_by_token(params.delete(:card))
-          params[:default_card] = cards.first[:id]
+        if params[:source]
+          new_card =
+            if params[:source].is_a?(Hash)
+              unless params[:source][:object] && params[:source][:number] && params[:source][:exp_month] && params[:source][:exp_year]
+                raise Stripe::InvalidRequestError.new('You must supply a valid card', nil, 400)
+              end
+              card_from_params(params[:source])
+            else
+              get_card_by_token(params.delete(:source))
+            end
+          sources << new_card
+          params[:default_source] = sources.first[:id]
         end
 
-        if params[:bank_account]
-          bank_accounts << get_bank_by_token(params.delete(:bank_account))
-          params[:default_bank_account] = bank_accounts.first[:id]
-        end
-
-        customers[ params[:id] ] = Data.mock_customer(cards, bank_accounts, params)
+        customers[ params[:id] ] = Data.mock_customer(sources, params)
 
         if params[:plan]
           plan_id = params[:plan].to_s
-          plan = assert_existance :plan, plan_id, plans[plan_id]
+          plan = assert_existence :plan, plan_id, plans[plan_id]
 
-          if params[:default_card].nil? && plan[:trial_period_days].nil? && plan[:amount] != 0
+          if params[:default_source].nil? && plan[:trial_period_days].nil? && plan[:amount] != 0
             raise Stripe::InvalidRequestError.new('You must supply a valid card', nil, 400)
           end
 
@@ -42,18 +45,32 @@ module StripeMock
           raise Stripe::InvalidRequestError.new('Received unknown parameter: trial_end', nil, 400)
         end
 
+        if params[:coupon]
+          coupon = coupons[ params[:coupon] ]
+          assert_existence :coupon, params[:coupon], coupon
+
+          add_coupon_to_customer(customers[params[:id]], coupon)
+        end
+
         customers[ params[:id] ]
       end
 
       def update_customer(route, method_url, params, headers)
         route =~ method_url
-        cus = assert_existance :customer, $1, customers[$1]
+        cus = assert_existence :customer, $1, customers[$1]
         cus.merge!(params)
 
-        if params[:card]
-          new_card = get_card_by_token(params.delete(:card))
+        if params[:source]
+          new_card = get_card_by_token(params.delete(:source))
           add_card_to_object(:customer, new_card, cus, true)
-          cus[:default_card] = new_card[:id]
+          cus[:default_source] = new_card[:id]
+        end
+
+        if params[:coupon]
+          coupon = coupons[ params[:coupon] ]
+          assert_existence :coupon, params[:coupon], coupon
+
+          add_coupon_to_customer(cus, coupon)
         end
 
         if params[:bank_account]
@@ -67,7 +84,7 @@ module StripeMock
 
       def delete_customer(route, method_url, params, headers)
         route =~ method_url
-        assert_existance :customer, $1, customers[$1]
+        assert_existence :customer, $1, customers[$1]
 
         customers[$1] = {
           id: customers[$1][:id],
@@ -77,11 +94,11 @@ module StripeMock
 
       def get_customer(route, method_url, params, headers)
         route =~ method_url
-        assert_existance :customer, $1, customers[$1]
+        assert_existence :customer, $1, customers[$1]
       end
 
       def list_customers(route, method_url, params, headers)
-        customers.values
+        Data.mock_list_object(customers.values, params)
       end
 
     end
