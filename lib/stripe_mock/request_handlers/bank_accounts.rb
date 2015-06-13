@@ -85,11 +85,11 @@ module StripeMock
 
         # These are only acceptable deposit amounts for test banks
         if params[:amounts] == [32,45]
-          bank[:status] = 'verified'
+          bank_account[:status] = 'verified'
         else
           raise Stripe::InvalidRequestError.new("The verification amounts provided do not match.", "BankAccount", 400)
         end
-        bank
+        bank_account
       end
 
 
