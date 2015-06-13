@@ -81,12 +81,11 @@ module StripeMock
         customer = customers[$1]
         assert_existence :customer, $1, customer
 
-        bank = get_customer_bank(customer, $2)
-        assert_existence :bank, $2, bank
+        bank_account = assert_existence :bank_account, $2, get_bank_account(customer, $2)
 
         # These are only acceptable deposit amounts for test banks
         if params[:amounts] == [32,45]
-          bank[:verified] = true
+          bank[:status] = 'verified'
         else
           raise Stripe::InvalidRequestError.new("The verification amounts provided do not match.", "BankAccount", 400)
         end
