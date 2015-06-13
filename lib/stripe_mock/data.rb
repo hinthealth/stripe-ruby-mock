@@ -35,6 +35,7 @@ module StripeMock
         },
         default_source: nil,
         default_bank_account: nil,
+        metadata: {},
       }.merge(params)
     end
 
