@@ -38,9 +38,33 @@ module StripeMock
         metadata: {},
       }.merge(params)
     end
-
+    def self.mock_card_for_charge(params = {})
+      {
+        object: "card",
+        last4: "4242",
+        type: "Visa",
+        brand: "Visa",
+        funding: "credit",
+        exp_month: 12,
+        exp_year: 2013,
+        fingerprint: "3TQGpK9JoY1GgXPw",
+        country: "US",
+        name: "name",
+        address_line1: nil,
+        address_line2: nil,
+        address_city: nil,
+        address_state: nil,
+        address_zip: nil,
+        address_country: nil,
+        cvc_check: nil,
+        address_line1_check: nil,
+        address_zip_check: nil,
+      }.merge(params)
+    end
     def self.mock_charge(params={})
       charge_id = params[:id] || "ch_1fD6uiR9FAA2zc"
+      source = params[:source] || mock_card_for_charge
+      default_status = source[:object] == 'card' ? 'succeeded' : 'processing'
       {
         id: charge_id,
         object: "charge",
@@ -51,30 +75,10 @@ module StripeMock
         currency: "usd",
         refunded: false,
         fee: 0,
-        status: 'succeeded',
+        status: default_status,
         fee_details: [
         ],
-        source: {
-          object: "card",
-          last4: "4242",
-          type: "Visa",
-          brand: "Visa",
-          funding: "credit",
-          exp_month: 12,
-          exp_year: 2013,
-          fingerprint: "3TQGpK9JoY1GgXPw",
-          country: "US",
-          name: "name",
-          address_line1: nil,
-          address_line2: nil,
-          address_city: nil,
-          address_state: nil,
-          address_zip: nil,
-          address_country: nil,
-          cvc_check: nil,
-          address_line1_check: nil,
-          address_zip_check: nil
-        },
+        source: source,
         captured: params.has_key?(:capture) ? params.delete(:capture) : true,
         refunds: {
           object: "list",
