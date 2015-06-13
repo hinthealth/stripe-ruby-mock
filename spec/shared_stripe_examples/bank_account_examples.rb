@@ -44,6 +44,12 @@ shared_examples 'Bank Account API' do
     expect(bank_account.last4).to eq("4321")
     expect(bank_account.bank_name).to eq("BANK OF AMERICA")
     expect(bank_account.country).to eq("US")
+
+    bank_account = customer.sources.data.first
+    expect(bank_account.customer).to eq('test_customer_sub')
+    expect(bank_account.last4).to eq("4321")
+    expect(bank_account.bank_name).to eq("BANK OF AMERICA")
+    expect(bank_account.country).to eq("US")
   end
 
 
@@ -58,6 +64,8 @@ shared_examples 'Bank Account API' do
     customer2 = Stripe::Customer.retrieve(customer.id)
     expect(customer2.bank_accounts.count).to eq 1
     expect(customer2.default_bank_account).to eq customer2.bank_accounts.first.id
+    expect(customer2.sources.count).to eq 1
+    expect(customer2.default_source).to eq customer2.sources.first.id
   end
 
 
@@ -70,11 +78,13 @@ shared_examples 'Bank Account API' do
     expect(customer.sources.count).to eq 0
 
     customer2 = Stripe::Customer.retrieve(customer.id)
-    expect(customer2.sources.count).to eq 1
+    expect(customer2.bank_accounts.count).to eq 1
     expect(customer2.default_bank_account).to eq customer2.sources.first.id
+    expect(customer2.sources.count).to eq 1
+    expect(customer2.default_source).to eq customer2.sources.first.id
   end
 
-  it 'create does not change the customers default bank_account if already set' do
+  it 'create does not change the customers default source if already set' do
     customer = Stripe::Customer.create(id: 'test_customer_sub', default_source: "test_cc_original")
     bank_account_token = stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US")
     bank_account = customer.sources.create(source: bank_account_token)
@@ -90,6 +100,7 @@ shared_examples 'Bank Account API' do
 
     customer = Stripe::Customer.retrieve('test_customer_sub')
     expect(customer.default_bank_account).to_not be_nil
+    expect(customer.default_source).to_not be_nil
   end
 
   context "retrieval and deletion" do
@@ -108,24 +119,24 @@ shared_examples 'Bank Account API' do
     end
 
     it "deletes a customers bank_account" do
-      pending "Bank accounts can't be deleted yet"
       bank_account.delete
       retrieved_cus = Stripe::Customer.retrieve(customer.id)
       expect(retrieved_cus.bank_accounts.data).to be_empty
+      expect(retrieved_cus.sources.data).to be_empty
     end
 
     it "deletes a customers bank_account then set the default_bank_account to nil" do
-      pending "Bank accounts can't be deleted yet"
       bank_account.delete
       retrieved_cus = Stripe::Customer.retrieve(customer.id)
       expect(retrieved_cus.default_bank_account).to be_nil
+      expect(retrieved_cus.default_source).to be_nil
     end
 
     it "updates the default bank_account if deleted" do
-      pending "Bank accounts can't be deleted yet"
       bank_account.delete
       retrieved_cus = Stripe::Customer.retrieve(customer.id)
       expect(retrieved_cus.default_bank_account).to be_nil
+      expect(retrieved_cus.default_source).to be_nil
     end
 
     context "deletion when the user has two bank_accounts" do
@@ -133,18 +144,19 @@ shared_examples 'Bank Account API' do
       let!(:bank_account_2) { customer.sources.create(source: bank_account_token_2) }
 
       it "has just one bank_account anymore" do
-        pending "Bank accounts can't be deleted yet"
         bank_account.delete
         retrieved_cus = Stripe::Customer.retrieve(customer.id)
         expect(retrieved_cus.bank_accounts.data.count).to eq 1
         expect(retrieved_cus.bank_accounts.data.first.id).to eq bank_account_2.id
+        expect(retrieved_cus.sources.data.count).to eq 1
+        expect(retrieved_cus.sources.data.first.id).to eq bank_account_2.id
       end
 
       it "sets the default_bank_account id to the last bank_account remaining id" do
-        pending "Bank accounts can't be deleted yet"
         bank_account.delete
         retrieved_cus = Stripe::Customer.retrieve(customer.id)
         expect(retrieved_cus.default_bank_account).to eq bank_account_2.id
+        expect(retrieved_cus.default_source).to eq bank_account_2.id
       end
     end
   end
@@ -168,7 +180,6 @@ shared_examples 'Bank Account API' do
     let!(:bank_account) { customer.bank_accounts.create(bank_account: bank_account_token) }
 
     it "updates the bank_account" do
-      pending "Stripe doesn't allow updating bank accounts yet"
       bank_name = "BANK OF THE WEST"
       country = "NZ"
 

@@ -53,7 +53,16 @@ module StripeMock
         customer[:bank_accounts][:data].reject!{|cc|
           cc[:id] == bank_account[:id]
         }
-        customer[:default_bank_account] = customer[:bank_accounts][:data].count > 0 ? customer[:bank_accounts][:data].first[:id] : nil
+        customer[:sources][:data].reject!{|cc|
+          cc[:id] == bank_account[:id]
+        }
+        customer[:default_source] = customer[:sources][:data].count > 0 ? customer[:sources][:data].first[:id] : nil
+        if customer[:default_source] && customer[:default_source][:object] = 'bank_account'
+          customer[:default_bank_account] = customer[:default_source]
+        else
+          customer[:default_bank_account] = nil
+        end
+
         bank_account
       end
 

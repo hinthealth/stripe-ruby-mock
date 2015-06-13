@@ -28,15 +28,24 @@ module StripeMock
         assert_existence :source, source_id, get_source(resource, source_id)
 
         source = { id: source_id, deleted: true }
-        sources_or_sources = resource[:sources]
-        sources_or_sources[:data].reject!{|cc|
-          cc[:id] == source[:id]
+
+        resource[:bank_accounts][:data].reject!{|source_in_db|
+          source_in_db[:id] == source[:id]
+        }
+        resource[:sources][:data].reject!{|source_in_db|
+          source_in_db[:id] == source[:id]
         }
 
         is_customer = resource.has_key?(:sources)
-        new_default = sources_or_sources[:data].count > 0 ? sources_or_sources[:data].first[:id] : nil
-        resource[:default_source] = new_default unless is_customer
-        resource[:default_source] = new_default if is_customer
+        new_default = resource[:sources][:data].count > 0 ? resource[:sources][:data].first[:id] : nil
+        resource[:default_source] = new_default
+
+        if resource[:default_source].to_s =~ /bank/
+          resource[:default_bank_account] = resource[:default_source]
+        else
+          resource[:default_bank_account] = nil
+        end
+
         source
       end
 
@@ -50,7 +59,8 @@ module StripeMock
           when 'card'
             add_card_to(type, type_id, params, objects)
           else
-            raise "Sources must have an object, and it must be either 'card' or 'bank_account'"
+            msg = "Sources must have an object, and it must be either 'card' or 'bank_account'"
+            raise Stripe::InvalidRequestError.new(msg, 'source', 404)
           end
         elsif source.is_a?(String)
           if source =~ /btok/
@@ -59,9 +69,8 @@ module StripeMock
             add_card_to(type, type_id, params, objects)
           end
         else
-          # require 'byebug'
-          # byebug
-          raise "wtf are you adding?? #{source}  #{params}"
+          msg = "Sources must be a token string or source object"
+          raise Stripe::InvalidRequestError.new(msg, 'source', 404)
         end
       end
     end

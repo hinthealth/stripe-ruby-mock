@@ -41,7 +41,6 @@ RSpec.configure do |c|
         raise "Please set your STRIPE_TEST_SECRET_KEY environment variable."
       end
     end
-
     c.before(:each) do
       StripeMock.stub(:start).and_return(nil)
       StripeMock.stub(:stop).and_return(nil)
