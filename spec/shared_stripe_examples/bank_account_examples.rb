@@ -102,7 +102,21 @@ shared_examples 'Bank Account API' do
     expect(customer.default_bank_account).to_not be_nil
     expect(customer.default_source).to_not be_nil
   end
+  context "verification" do
+    let!(:customer) { Stripe::Customer.create(id: 'test_customer_sub') }
+    let!(:bank_account_token) { stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US") }
+    let!(:bank_account) { customer.sources.create(source: bank_account_token) }
+    it "verifies with the correct amounts" do
+      retrieved = customer.bank_accounts.retrieve(bank_account.id)
+      retrieved.verify(amounts: [32,45])
+      expect(retrieved.status).to eq('verified')
+    end
+    it "doesn't verify with incorrect amounts" do
+      retrieved = customer.bank_accounts.retrieve(bank_account.id)
+      expect { retrieved.verify(amounts: [34,45]) }.to raise_exception Stripe::InvalidRequestError, "The verification amounts provided do not match."
+    end
 
+  end
   context "retrieval and deletion" do
     let!(:customer) { Stripe::Customer.create(id: 'test_customer_sub') }
     let!(:bank_account_token) { stripe_helper.generate_bank_token(last4: "1123", bank_name: "BANK OF AMERICA", country: "US") }
